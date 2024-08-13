@@ -32,6 +32,10 @@ impl<I2C: I2c> Bq2577x<I2C> {
         Self { i2c, addr: Self::ADDR }
     }
 
+    pub fn destroy(self) -> I2C {
+        self.i2c
+    }
+
     async fn read(&mut self, reg: u8) -> Result<u16, I2C::Error> {
         let mut bytes = [0; 2];
         self.i2c.write_read(self.addr, &[reg], &mut bytes).await?;
@@ -162,5 +166,75 @@ impl_write!(set_gm_adjust_force, GmAdjustForce);
 impl_read!(virtual_control, VirtualControl);
 impl_write!(set_virtual_control, VirtualControl);
 
-impl_read!(device, Device);
 impl_read!(manufacturer, Manufacturer);
+impl_read!(device, Device);
+
+#[cfg(test)]
+mod tests {
+    use embedded_hal_mock::eh1::i2c::{Mock, Transaction};
+
+    use super::*;
+
+    macro_rules! test_reset {
+        ($method:ident, $r:ty, $v:expr) => {
+            let value = $v as u16;
+            let e = vec![Transaction::write_read(
+                0x09,
+                vec![<$r>::addr()],
+                value.to_be_bytes().to_vec(),
+            )];
+
+            let mock = Mock::new(&e);
+            let mut bq = Bq2577x::new(mock);
+            let result = bq.$method().await;
+            assert!(result.is_ok());
+
+            let reset = result.unwrap();
+            assert_eq!(reset.into_bits(), value);
+
+            let mut mock = bq.destroy();
+            mock.done();
+        };
+    }
+
+    #[tokio::test]
+    async fn test_reset_of_registers() {
+        test_reset!(charge_option0, ChargeOption0, 0xe70e);
+        test_reset!(charge_current, ChargeCurrent, 0);
+        test_reset!(charge_voltage, ChargeVoltage, 0);
+        test_reset!(charge_profile, ChargeProfile, 0x3020);
+        test_reset!(gate_drive, GateDrive, 0x246c);
+        test_reset!(charge_option5, ChargeOption5, 0x0685);
+        test_reset!(auto_charge, AutoCharge, 0x01c2);
+        test_reset!(charger_status0, ChargerStatus0, 0);
+        test_reset!(charger_status1, ChargerStatus1, 0);
+        test_reset!(prochot_status, ProchotStatus, 0x3800);
+        test_reset!(iin_dpm, IinDpm, 0x0320);
+        test_reset!(adc_vbus, AdcVbus, 0);
+        test_reset!(adc_ibat, AdcIbat, 0);
+        test_reset!(adc_iin, AdcIin, 0);
+        test_reset!(adc_vsys, AdcVsys, 0);
+        test_reset!(adc_vbat, AdcVbat, 0);
+        test_reset!(adc_psys, AdcPsys, 0);
+        test_reset!(adc_cmpin_tr, AdcCmpinTr, 0);
+        test_reset!(charge_option1, ChargeOption1, 0x3201);
+        test_reset!(charge_option2, ChargeOption2, 0x00b7);
+        test_reset!(charge_option3, ChargeOption3, 0x0534);
+        test_reset!(prochot_option0, ProchotOption0, 0x4a39);
+        test_reset!(prochot_option1, ProchotOption1, 0x41a0);
+        test_reset!(adc_option, AdcOption, 0x9000);
+        test_reset!(charge_option4, ChargeOption4, 0x0048);
+        test_reset!(vmin_active_protection, VminActiveProtection, 0x0024);
+        test_reset!(otg_voltage, OtgVoltage, 0x03e8);
+        test_reset!(otg_current, OtgCurrent, 0x01e0);
+        test_reset!(vin_dpm, VinDpm, 0x0280);
+        test_reset!(vsys_min, VsysMin, 0x0528);
+        test_reset!(iin_host, IinHost, 0x0320);
+        test_reset!(autotune_read, AutotuneRead, 0);
+        test_reset!(autotune_force, AutotuneForce, 0xa8a8);
+        test_reset!(gm_adjust_force, GmAdjustForce, 0x00c7);
+        test_reset!(virtual_control, VirtualControl, 0x0013);
+        test_reset!(manufacturer, Manufacturer, 0x0040);
+        test_reset!(device, Device, 0x000a);
+    }
+}
