@@ -2,14 +2,14 @@
 name = "bq2577x"
 version = "0.1.0"
 authors = ["Felipe Balbi <febalbi@microsoft.com>"]
-repository = "https://github.com/pop-project/bq2577x"
+repository = "https://github.com/OpenDevicePartnership/bq25770g"
 license = "MIT"
 description = "Platform-agnostic Rust driver for the BQ2577x series of battery chargers."
 readme = "README.md"
 keywords = ["temperature", "sensor", "i2c", "driver", "embedded-hal-driver"]
 categories = ["embedded", "hardware-support", "no-std"]
-homepage = "https://github.com/pop-project/bq2577x"
-documentation = "https://docs.rs/bq2577x"
+homepage = "https://github.com/OpenDevicePartnership/bq25770g"
+documentation = "https://docs.rs/bq2577g"
 include = [
 	"/**/*.rs",
 	"/Cargo.toml",
